@@ -1,0 +1,21 @@
+# Нормализация окончаний строк: в репозитории LF, при выгрузке – по правилам ОС
+* text=auto
+# Исходный код и конфигурация
+*.cs text diff=csharp
+*.csproj text
+*.sln text eol=crlf
+*.sql text
+*.json text
+*.md text
+*.yml text
+*.sh text eol=lf
+# Бинарные файлы: без нормализации и построчного diff
+*.png binary
+*.jpg binary
+*.dll binary
+*.exe binary
+*.pdf binary
+*.docx binary
+*.xlsx binary
+*.bak filter=lfs diff=lfs merge=lfs -text
+*.zip filter=lfs diff=lfs merge=lfs -text

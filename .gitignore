@@ -1,0 +1,36 @@
+# Сборка .NET (без "/" в начале: правило действует и для src/*/bin, и для tests/*/bin)
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+TestResults/
+*.nupkg
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Локальные базы данных и логи
+*.mdf
+*.ldf
+*.db
+*.sqlite
+*.sqlite-journal
+*.log
+logs/
+
+# Секреты и локальные настройки (строки подключения к БД деканата, ключи интеграции с БРС)
+.env
+*.pfx
+appsettings.*.local.json
+
+# Выгрузки ведомостей и приказов, сформированные при локальном запуске
+exports/
+
+# ОС
+.DS_Store
+Thumbs.db
