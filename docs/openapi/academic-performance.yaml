@@ -1,0 +1,194 @@
+openapi: 3.0.3
+info:
+  title: АИС «Учебный деканат» — Успеваемость и расчёт GPA
+  version: 1.0.0
+  description: Контракт модуля «Успеваемость и GPA». Доступ — роли Декан, Методист, Бухгалтерия.
+servers:
+  - url: https://dekanat.example.local/api/v1
+security:
+  - bearerAuth: []
+paths:
+  /students/{studentId}/grades:
+    get:
+      summary: Оценки студента за семестр
+      operationId: getStudentGrades
+      parameters:
+        - $ref: '#/components/parameters/StudentId'
+        - $ref: '#/components/parameters/Semester'
+      responses:
+        '200':
+          description: Список оценок
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GradeRecord'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /students/{studentId}/gpa:
+    get:
+      summary: Средний балл (GPA) студента за семестр
+      operationId: getStudentGpa
+      parameters:
+        - $ref: '#/components/parameters/StudentId'
+        - $ref: '#/components/parameters/Semester'
+      responses:
+        '200':
+          description: Результат расчёта
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GpaResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /groups/{groupCode}/statements:
+    post:
+      summary: Сформировать ведомость группы по дисциплине
+      operationId: createStatement
+      parameters:
+        - name: groupCode
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[А-ЯA-Z]{1,3}\d{2}-\d{2}-\d{1,2}$'
+            example: И14-23-9
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatementRequest'
+      responses:
+        '201':
+          description: Ведомость сформирована
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Statement'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    StudentId:
+      name: studentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    Semester:
+      name: semester
+      in: query
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 12
+  schemas:
+    AssessmentType:
+      type: string
+      enum: [Exam, GradedCredit, Credit]
+    GradeRecord:
+      type: object
+      required: [discipline, credits, type, points, attempt]
+      properties:
+        discipline:
+          type: string
+        credits:
+          type: number
+          minimum: 0.5
+        type:
+          $ref: '#/components/schemas/AssessmentType'
+        points:
+          type: number
+          minimum: 0
+          maximum: 100
+        mark:
+          type: integer
+          minimum: 2
+          maximum: 5
+          readOnly: true
+        attempt:
+          type: integer
+          minimum: 1
+    GpaResult:
+      type: object
+      required: [studentId, semester, gpa, scholarship]
+      properties:
+        studentId:
+          type: string
+          format: uuid
+        semester:
+          type: integer
+        gpa:
+          type: number
+          format: decimal
+          example: 4.33
+        scholarship:
+          type: string
+          enum: [None, Regular, Increased]
+        calculatedAt:
+          type: string
+          format: date-time
+    StatementRequest:
+      type: object
+      required: [discipline, semester]
+      properties:
+        discipline:
+          type: string
+        semester:
+          type: integer
+    Statement:
+      type: object
+      properties:
+        statementId:
+          type: string
+          format: uuid
+        groupCode:
+          type: string
+        discipline:
+          type: string
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/GradeRecord'
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+  responses:
+    BadRequest:
+      description: Ошибка в запросе
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Нет токена или роли
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Студент не найден
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

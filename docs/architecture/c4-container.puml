@@ -1,0 +1,28 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+title АИС «Учебный деканат» — диаграмма контейнеров (C4, уровень 2)
+
+Person(dean, "Сотрудник деканата", "Декан, методист, бухгалтерия")
+System_Ext(brs, "БРС", "Балльно-рейтинговая система: оценки преподавателей")
+
+System_Boundary(ais, "АИС «Учебный деканат»") {
+  Container(web, "Веб-интерфейс деканата", "ASP.NET Core MVC", "Ведомости, рейтинги, приказы")
+  Container(gw, "API-шлюз", "ASP.NET Core", "Единая точка входа, проверка JWT и ролей")
+  Container(grades, "Сервис «Успеваемость и GPA»", ".NET 8", "Хранит оценки, считает GPA")
+  Container(orders, "Сервис приказов", ".NET 8", "Приказы по контингенту студентов")
+  Container(schol, "Сервис стипендий", ".NET 8", "Назначение стипендий по итогам сессии")
+  ContainerQueue(mq, "RabbitMQ", "AMQP", "События GradeChanged, GpaRecalculated")
+  ContainerDb(db, "БД успеваемости", "PostgreSQL", "Оценки, GPA, таблица Outbox")
+}
+
+Rel(dean, web, "Работает", "HTTPS")
+Rel(web, gw, "Вызывает API", "HTTPS/JSON")
+Rel(gw, grades, "GET /students/{id}/gpa", "HTTPS/JSON")
+Rel(gw, orders, "Приказы", "HTTPS/JSON")
+Rel(gw, schol, "Стипендии", "HTTPS/JSON")
+Rel(brs, mq, "Публикует GradeChanged", "AMQP")
+Rel(mq, grades, "Доставляет события", "AMQP")
+Rel(grades, db, "Читает и пишет", "SQL")
+Rel(grades, mq, "GpaRecalculated через Outbox", "AMQP")
+Rel(mq, schol, "Доставляет GpaRecalculated", "AMQP")
+@enduml
